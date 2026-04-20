@@ -26,6 +26,7 @@ var banquet = require('./router/banquet/index')
 var topic = require('./router/topic/index')
 var child = require('./router/child/index')
 var income = require('./router/income/index')
+var user = require('./router/user/index')
 
 function getClientIp (req) {
   return rep.headers['x-forwarded-for'] || req.connection.remoteAddress ||
@@ -67,6 +68,7 @@ global.forUseRouter(topic, app)
 global.forUseRouter(child, app)
 global.forUseRouter(income, app)
 global.forUseRouter(keep, app)
+global.forUseRouter(user, app)
 // 添加这行：处理前端路由，返回index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
