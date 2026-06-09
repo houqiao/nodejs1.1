@@ -60,7 +60,7 @@ app.post('/stock/detail', (req, res) => {
 
 app.post('/stock/add', (req, res) => {
   const connect = global.connection()
-  const sql = 'insert into stock (name, position, cost, target_position, target_cost, type,owned,other,supporting) values(?,?,?,?,?,?,?,?)'
+  const sql = 'insert into stock (name, position, cost, target_position, target_cost, type,owned,other,supporting) values(?,?,?,?,?,?,?,?,?)'
   const { name, position, cost, target_position, target_cost, type,owned,other,supporting } = req.body
   console.log(req.body, '123')
   connect.query(sql, [ name, position, cost, target_position, target_cost, type,owned,other,supporting ], (err, data) => {
