@@ -15,10 +15,17 @@ app.get('/getTopicDetail', (req, res) => {
 // ? topic list
 app.get('/getTopicList', (req, res) => {
   const connect = global.connection()
-  const sql = global.sqlList('topic')
   const size = parseInt(req.query.size) || 20
   const current = parseInt(req.query.current) || 1
-  const param = [(current - 1) * size, size]
+  const title = req.query.title
+  let sql = 'select * from topic'
+  const param = []
+  if (title) {
+    sql = sql + ' where name like ?'
+    param.push(`%${title}%`)
+  }
+  sql = sql + ' limit ?,?'
+  param.push((current - 1) * size, size)
   connect.query(sql, param, (err, data) => {
     global.resJson(err, res, data)
     connect.end()
