@@ -1,4 +1,4 @@
-const  express = require('express')
+﻿const  express = require('express')
 const app = express.Router()
 const global = require('../../global.js')
 
@@ -6,8 +6,8 @@ const global = require('../../global.js')
 app.get('/big/list', (req, res) => {
   console.log("in")
   const connect = global.connection()
-  const sql = `select * from t_sell_area`
-  connect.query(sql, (err, data) => {
+  const sql = `select * from t_sell_area where user_id = ?`
+  connect.query(sql, [req.user.id], (err, data) => {
     if (err) {
       console.log(err)
     }

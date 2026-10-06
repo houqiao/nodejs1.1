@@ -1,10 +1,10 @@
-var express = require('express')
+﻿var express = require('express')
 var global = require('../global.js');
 
 var app = express.Router();
 
 app.get('/free_throw', (req, res) => {
-  var sqlTotal = 'select * from free_throw limit ?,?'
+  var sqlTotal = 'select * from free_throw where user_id = ? limit ?,?'
   var row = req.query
   var connect = global.connection()
   // console.log('---', row)
@@ -24,7 +24,7 @@ app.get('/free_throw', (req, res) => {
 })
 
 app.get('/hook', (req, res) => {
-  var sqlTotal = 'select * from hook limit ?,?'
+  var sqlTotal = 'select * from hook where user_id = ? limit ?,?'
   var connect = global.connection()
   connect.query(sqlTotal, [0, 20], (err, result) => {
     if (err) return
@@ -40,7 +40,7 @@ app.get('/hook', (req, res) => {
   })
 })
 app.get('/three_points', (req, res) => {
-  var sqlTotal = 'select * from three_points limit ?,?'
+  var sqlTotal = 'select * from three_points where user_id = ? limit ?,?'
   var connect = global.connection()
   connect.query(sqlTotal, [0, 20], (err, result) => {
     if (err) return

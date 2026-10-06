@@ -1,4 +1,4 @@
-var express = require('express');
+﻿var express = require('express');
 var global = require('../../global')
 var totalGlobal = 0
 // var ObjectID = require('mongdb').ObjectID; // 查询ID模块
@@ -6,8 +6,8 @@ var app = express.Router();
 
 app.get('/one', (req, res) => {
   //查
-    var params = [(parseInt(req.query.current || 1) - 1) * parseInt(req.query.size || 20), parseInt(req.query.size || 20)]
-    sql = "select * from income limit ?,?";
+    var params = [req.user.id, (parseInt(req.query.current || 1) - 1) * parseInt(req.query.size || 20), parseInt(req.query.size || 20)]
+    sql = "select * from income where user_id = ? limit ?,?";
     var connection = global.connection();
     connection.query(sql, params, function (err, result) {
       if(err){
@@ -17,8 +17,8 @@ app.get('/one', (req, res) => {
   
     console.log('--------------------------SELECT----------------------------');
     data = result.reverse()
-    let sqlTotal = 'select count(*) as total from income' //as更换名称
-      connection.query(sqlTotal, function (error, among) {
+    let sqlTotal = 'select count(*) as total from income where user_id = ?' //as更换名称
+      connection.query(sqlTotal, [req.user.id], function (error, among) {
           if (error) {
               console.log(error);
           } else {
@@ -47,9 +47,9 @@ app.get('/one', (req, res) => {
   // addSqlParams = []
   var connection = global.connection();
   var ll = req.body
-  var addSqlParams =  [ll.name, ll.money, ll.date, ll.acount, ll.toWhere];
+  var addSqlParams =  [ll.name, ll.money, ll.date, ll.acount, ll.toWhere, req.user.id];
   console.log('INSERT ID:',addSqlParams)
-  var  addSql = 'INSERT INTO income(Id,name,money,date,acount,toWhere) VALUES(0,?,?,?,?,?)';
+  var  addSql = 'INSERT INTO income(Id,name,money,date,acount,toWhere,user_id) VALUES(0,?,?,?,?,?,?)';
   connection.query(addSql, addSqlParams, function (err, result) {
     if(err){
      console.log('[INSERT ERROR] - ',err.message);
@@ -62,12 +62,11 @@ app.get('/one', (req, res) => {
 })
 
 app.post('/deleteShort', (req, res) => {
-  var delSql = 'DELETE FROM `income` where id='
+  var delSql = 'DELETE FROM `income` where id = ? and user_id = ?'
   // addSqlParams = []
   var connection = global.connection();
-  delSql = delSql + req.body.id;
   console.log('INSERT ID:',req.body); 
-  connection.query(delSql,function (err, result) {
+  connection.query(delSql, [req.body.id, req.user.id], function (err, result) {
     if(err){
       console.log('[DELETE ERROR] - ',err.message);
       return;
@@ -80,10 +79,10 @@ app.post('/deleteShort', (req, res) => {
 })
 app.post('/editShort', (req, res) => {
   var connection = global.connection();
-  var modSql = 'UPDATE income SET name = ?, money = ?, date = ?, acount = ?, toWhere = ?  WHERE Id = ?';
+  var modSql = 'UPDATE income SET name = ?, money = ?, date = ?, acount = ?, toWhere = ?  WHERE Id = ? and user_id = ?';
   var ll = req.body
   console.log('参数', ll)
-  var modSqlParams =  [ll.name, ll.money, ll.date, ll.acount, ll.toWhere, ll.id];
+  var modSqlParams =  [ll.name, ll.money, ll.date, ll.acount, ll.toWhere, ll.id, req.user.id];
   //改
   connection.query(modSql,modSqlParams,function (err, result) {
      if(err){

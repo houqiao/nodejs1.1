@@ -1,26 +1,26 @@
-var express = require('express')
+﻿var express = require('express')
 var app = express.Router()
 var global = require('../../global')
 
 app.get('/hourse/list', (req, res) => {
   const connect = global.connection()
   const query = req.query
-  let sql = `select * from home  `
-  // 
-  const param = []
+  let sql = 'select * from home where user_id = ? '
+  const param = [req.user.id]
   if (query.name) {
-    sql = sql + `${sql.includes('where') ? 'and' : 'where'} name LIKE '%${query.name}%' `
+    sql = sql + 'and name LIKE ? '
+    param.push(`%${query.name}%`)
   }
   if (query.area) {
-    sql = sql + `${sql.includes('where') ? 'and' : 'where'}  area = ? `
+    sql = sql + 'and area = ? '
     param.push(query.area)
   }
-   sql = sql + ` ORDER BY id DESC `
-  sql = sql + `limit ${parseInt(query.size)} offset ${(parseInt(query.current) - 1) * parseInt(query.size)}`
+  sql = sql + 'ORDER BY id DESC limit ? offset ?'
+  param.push(parseInt(query.size || 20), (parseInt(query.current || 1) - 1) * parseInt(query.size || 20))
   connect.query(sql, param, (err, data) => {
     console.log(err)
     if (err) return
-    connect.query('select count(*) as total from home', (err, datatotal) => {
+    connect.query('select count(*) as total from home where user_id = ?', [req.user.id], (err, datatotal) => {
       res.json({
         code: 200,
         data: {
@@ -37,47 +37,35 @@ app.get('/hourse/list', (req, res) => {
 app.post('/hourse/add', (req, res) => {
   const connect = global.connection()
   const query = req.body
-  const param = [query.name, query.area, query.price,query.school,query.metrol,query.commute,query.supporting,query.other]
-  const sql = 'insert into home (id,name,area,price,school,metrol,commute,supporting,other) values(0,?,?,?,?,?,?,?,?)'
+  const param = [query.name, query.area, query.price, query.school, query.metrol, query.commute, query.supporting, query.other, req.user.id]
+  const sql = 'insert into home (id,name,area,price,school,metrol,commute,supporting,other,user_id) values(0,?,?,?,?,?,?,?,?,?)'
   connect.query(sql, param, (err, data) => {
     if (err) return
-    res.json({
-      code: 200,
-      data: data,
-      message: 'success'
-    })
+    res.json({ code: 200, data: data, message: 'success' })
     connect.end()
   })
 })
 
-app.post('/hourse/edit', (req,res) => {
+app.post('/hourse/edit', (req, res) => {
   const connect = global.connection()
   const query = req.query
-  const param = [query.name, query.area, query.price,query.school,query.metrol,query.commute,query.supporting,query.other]
-  const sql = 'update home set  name =?,area = ?,price= ?,school= ?,metrol= ?,commute= ?,supporting= ?,other= ? where id =' + req.query.id
+  const param = [query.name, query.area, query.price, query.school, query.metrol, query.commute, query.supporting, query.other, query.id, req.user.id]
+  const sql = 'update home set name = ?, area = ?, price = ?, school = ?, metrol = ?, commute = ?, supporting = ?, other = ? where id = ? and user_id = ?'
   connect.query(sql, param, (err, data) => {
     console.log(err)
     if (err) return
-    res.json({
-      code: 200,
-      data: data,
-      message: 'success'
-    })
+    res.json({ code: 200, data: data, message: 'success' })
     connect.end()
   })
 })
 
 app.post('/hourse/detail', (req, res) => {
-  const connect = global.connection();
+  const connect = global.connection()
   const query = req.query
-  const sql = 'select * from home where id ='+ query.id
-  connect.query(sql, (err, data) => {
+  const sql = 'select * from home where id = ? and user_id = ?'
+  connect.query(sql, [query.id, req.user.id], (err, data) => {
     if (err) return
-    res.json({
-      code: 200,
-      data: data[0],
-      message: 'success'
-    })
+    res.json({ code: 200, data: data[0], message: 'success' })
     connect.end()
   })
 })
@@ -85,14 +73,10 @@ app.post('/hourse/detail', (req, res) => {
 app.post('/hourse/delete', (req, res) => {
   const connect = global.connection()
   const query = req.query
-  const sql = 'delete  from home where id=' + query.id
-  connect.query(sql, (err, data) => {
+  const sql = 'delete from home where id = ? and user_id = ?'
+  connect.query(sql, [query.id, req.user.id], (err, data) => {
     if (err) return
-    res.json({
-      code: 200,
-      data: data,
-      message: 'success'
-    })
+    res.json({ code: 200, data: data, message: 'success' })
     connect.end()
   })
 })

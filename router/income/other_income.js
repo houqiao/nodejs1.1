@@ -1,12 +1,12 @@
-var express = require('express');
+﻿var express = require('express');
 var global = require('../../global.js');
 var totalGlobal = 0
 var app = express.Router();
 
 // ? list
 app.get('/getOtherIncome', (req, res) => {
-    var params = [(parseInt(req.query.current || 1) - 1) * parseInt(req.query.size || 20), parseInt(req.query.size || 20)]
-    sql = "select * from other_income limit ?,?";
+    var params = [req.user.id, (parseInt(req.query.current || 1) - 1) * parseInt(req.query.size || 20), parseInt(req.query.size || 20)]
+    sql = "select * from other_income where user_id = ? limit ?,?";
     const connection = global.connection()
     connection.query(sql, params, function (err, result) {
       if(err){
@@ -14,8 +14,8 @@ app.get('/getOtherIncome', (req, res) => {
         return;
       }
     data = result
-    let sqlTotal = 'select count(*) as total from other_income' //as更换名称
-      connection.query(sqlTotal, function (error, among) {
+    let sqlTotal = 'select count(*) as total from other_income where user_id = ?' //as更换名称
+      connection.query(sqlTotal, [req.user.id], function (error, among) {
         if (error) {
             console.log(error);
         } else {
@@ -42,8 +42,8 @@ app.get('/getOtherIncome', (req, res) => {
   app.post('/addOtherIncome', (req, res) => {
   var connection = global.connection() 
   var ll = req.body
-  var addSqlParams =  [ll.name, ll.money, ll.date, ll.acount, ll.toWhere];
-  var  addSql = 'INSERT INTO other_income(Id,name,money,date,acount,toWhere) VALUES(0,?,?,?,?,?)';
+  var addSqlParams =  [ll.name, ll.money, ll.date, ll.acount, ll.toWhere, req.user.id];
+  var  addSql = 'INSERT INTO other_income(Id,name,money,date,acount,toWhere,user_id) VALUES(0,?,?,?,?,?,?)';
   connection.query(addSql, addSqlParams, function (err, result) {
     if(err){
      console.log('[INSERT ERROR] - ',err.message);
@@ -56,10 +56,10 @@ app.get('/getOtherIncome', (req, res) => {
 
 // ? delete
 app.post('/DeleteOtherIncome', (req, res) => {
-  var delSql = 'DELETE FROM `other_income` where id='
+  var delSql = 'DELETE FROM `other_income` where id = ? and user_id = ?'
   var connection = global.connection();
-  delSql = delSql + req.body.id;
-  connection.query(delSql,function (err, result) {
+  
+  connection.query(delSql, [req.body.id, req.user.id], function (err, result) {
     if(err){
       console.log('[DELETE ERROR] - ',err.message);
       return;
@@ -72,10 +72,10 @@ app.post('/DeleteOtherIncome', (req, res) => {
 // ? edit
 app.post('/EditOtherIncome', (req, res) => {
   var connection = global.connection()
-  var modSql = 'UPDATE other_income SET name = ?, money = ?, date = ?, acount = ?, toWhere = ?  WHERE Id = ?';
+  var modSql = 'UPDATE other_income SET name = ?, money = ?, date = ?, acount = ?, toWhere = ?  WHERE Id = ? and user_id = ?';
   var ll = req.body
   console.log('参数', ll)
-  var modSqlParams =  [ll.name, ll.money, ll.date, ll.acount, ll.toWhere, ll.id];
+  var modSqlParams =  [ll.name, ll.money, ll.date, ll.acount, ll.toWhere, ll.id, req.user.id];
   //改
   connection.query(modSql,modSqlParams,function (err, result) {
      if(err){

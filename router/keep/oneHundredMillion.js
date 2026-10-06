@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const global = require('../../global');
 
@@ -54,9 +54,9 @@ function toNumber(value) {
   return Number.isFinite(num) ? num : null;
 }
 
-function buildAssetFilters({ startDate, endDate, category }) {
-  const conditions = ['1=1'];
-  const params = [];
+function buildAssetFilters({ startDate, endDate, category, userId }) {
+  const conditions = ['user_id = ?'];
+  const params = [userId];
 
   if (startDate) {
     conditions.push('record_date >= ?');
@@ -105,9 +105,9 @@ router.post('/asset/add', (req, res) => {
 
   const conn = global.connection();
   const sql =
-    'INSERT INTO asset_records (amount, description, category, record_date, create_time) VALUES (?, ?, ?, CURRENT_DATE, NOW())';
+    'INSERT INTO asset_records (amount, description, category, record_date, create_time, user_id) VALUES (?, ?, ?, CURRENT_DATE, NOW(), ?)';
 
-  conn.query(sql, [numericAmount, description, category], (err, result) => {
+  conn.query(sql, [numericAmount, description, category, req.user.id], (err, result) => {
     if (err) {
       console.error('添加资产记录失败:', err);
       sendFailure(res, '添加失败');
@@ -132,9 +132,9 @@ router.get('/asset/daily', (req, res) => {
       COUNT(*) as record_count,
       AVG(amount) as avg_amount
     FROM asset_records
-    WHERE 1=1
+    WHERE user_id = ?
   `;
-  const params = [];
+  const params = [req.user.id];
 
   if (startDate) {
     sql += ' AND record_date >= ?';
@@ -176,9 +176,9 @@ router.get('/asset/weekly', (req, res) => {
       COUNT(*) as record_count,
       AVG(amount) as avg_amount
     FROM asset_records
-    WHERE 1=1
+    WHERE user_id = ?
   `;
-  const params = [];
+  const params = [req.user.id];
 
   if (startDate) {
     sql += ' AND record_date >= ?';
@@ -226,9 +226,9 @@ router.get('/asset/monthly', (req, res) => {
       MIN(amount) as min_amount,
       MAX(amount) as max_amount
     FROM asset_records
-    WHERE 1=1
+    WHERE user_id = ?
   `;
-  const params = [];
+  const params = [req.user.id];
 
   if (startDate) {
     sql += ' AND record_date >= ?';
@@ -277,9 +277,9 @@ router.get('/asset/yearly', (req, res) => {
       MIN(amount) as min_amount,
       MAX(amount) as max_amount
     FROM asset_records
-    WHERE 1=1
+    WHERE user_id = ?
   `;
-  const params = [];
+  const params = [req.user.id];
 
   if (startDate) {
     sql += ' AND record_date >= ?';
@@ -318,7 +318,7 @@ router.get('/asset/chart/:type', (req, res) => {
 
   const { labelSelect, groupBy, orderBy } = chartConfig[type];
   const limitValue = toPositiveInt(limit, DEFAULT_LIMITS[type] || DEFAULT_LIMITS.daily);
-  const { clause, params } = buildAssetFilters({ startDate, endDate, category });
+  const { clause, params } = buildAssetFilters({ startDate, endDate, category, userId: req.user.id });
 
   let sql = `
     SELECT
@@ -374,7 +374,7 @@ router.get('/asset/list', (req, res) => {
   const limitValue = toPositiveInt(limit, DEFAULT_LIMITS.list);
   const offset = (pageValue - 1) * limitValue;
 
-  const { clause, params: filterParams } = buildAssetFilters({ startDate, endDate, category });
+  const { clause, params: filterParams } = buildAssetFilters({ startDate, endDate, category, userId: req.user.id });
   const listSql = `
     SELECT *
     FROM asset_records${clause}
@@ -426,9 +426,9 @@ router.post('/asset/delete', (req, res) => {
   }
 
   const conn = global.connection();
-  const sql = 'DELETE FROM asset_records WHERE id = ?';
+  const sql = 'DELETE FROM asset_records WHERE id = ? AND user_id = ?';
 
-  conn.query(sql, [id], (err, result) => {
+  conn.query(sql, [id, req.user.id], (err, result) => {
     if (err) {
       console.error('删除资产记录失败:', err);
       sendFailure(res, '删除失败');
@@ -484,9 +484,9 @@ router.post('/asset/edit', (req, res) => {
   }
 
   updates.push('update_time = NOW()');
-  params.push(id);
+  params.push(id, req.user.id);
 
-  const sql = `UPDATE asset_records SET ${updates.join(', ')} WHERE id = ?`;
+  const sql = `UPDATE asset_records SET ${updates.join(', ')} WHERE id = ? AND user_id = ?`;
   const conn = global.connection();
 
   conn.query(sql, params, (err, result) => {

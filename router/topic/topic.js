@@ -1,12 +1,12 @@
-var express = require('express')
+﻿var express = require('express')
 var app = express.Router()
 var global = require('../../global')
 
 // ? topic detail
 app.get('/getTopicDetail', (req, res) => {
   const connect = global.connection()
-  const sql = global.sqlDetail('topic', req.query.id)
-  connect.query(sql, (err, data) => {
+  const sql = 'select * from topic where id = ? and user_id = ?'
+  connect.query(sql, [req.query.id, req.user.id], (err, data) => {
     global.resJson(err, res, data, () => res.json({code: 200, message: 'success', data: data && data.length && data[0]}))
     connect.end()
   })
@@ -18,10 +18,10 @@ app.get('/getTopicList', (req, res) => {
   const size = parseInt(req.query.size) || 20
   const current = parseInt(req.query.current) || 1
   const title = req.query.title
-  let sql = 'select * from topic'
-  const param = []
+  let sql = 'select * from topic where user_id = ?'
+  const param = [req.user.id]
   if (title) {
-    sql = sql + ' where name like ?'
+    sql = sql + ' and name like ?'
     param.push(`%${title}%`)
   }
   sql = sql + ' limit ?,?'
@@ -36,8 +36,8 @@ app.get('/getTopicList', (req, res) => {
 app.post('/addWebTopic', (req, res) => {
   const connect = global.connection()
   const query = req.query
-  const param = [query.name, query.type, query.remark, query.detail ]
-  const sql = 'insert into topic (id, name, type, remark, detail) values(0,?,?,?,?)'
+  const param = [query.name, query.type, query.remark, query.detail, req.user.id]
+  const sql = 'insert into topic (id, name, type, remark, detail, user_id) values(0,?,?,?,?,?)'
   connect.query(sql, param, (err, data) => {
     global.resJson(err, res, data)
     connect.end()
@@ -48,8 +48,8 @@ app.post('/addWebTopic', (req, res) => {
 app.post('/editWebTopic', (req, res) => {
   const connect = global.connection()
   const query = req.query
-  const param = [query.name, query.type, query.detail, query.remark, query.id]
-  const sql = 'update topic set  name = ? , type = ?, detail = ?, remark = ? where id = ?'
+  const param = [query.name, query.type, query.detail, query.remark, query.id, req.user.id]
+  const sql = 'update topic set  name = ? , type = ?, detail = ?, remark = ? where id = ? and user_id = ?'
   connect.query(sql, param, (err, data) => {
     global.resJson(err, res, data)
     connect.end()

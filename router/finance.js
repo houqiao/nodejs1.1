@@ -1,14 +1,14 @@
-var express = require('express')
+﻿var express = require('express')
 var global = require('../global.js');
 
 var app = express.Router();
 
 app.get('/getCurrent', (req, res) => {
-  var sqlTotal = 'select * from current limit ?,?'
+  var sqlTotal = 'select * from current where user_id = ? limit ?,?'
   var row = req.query
   var connect = global.connection()
   // console.log('---', row)
-  connect.query(sqlTotal, [(parseInt(row.current || 1) - 1) * parseInt(row.size || 20), parseInt(row.size) || 20], (err, result) => {
+  connect.query(sqlTotal, [req.user.id, (parseInt(row.current || 1) - 1) * parseInt(row.size || 20), parseInt(row.size) || 20], (err, result) => {
     console.log('---', err)
     if (err) return
     if (!err) {
@@ -33,8 +33,8 @@ app.get('/getCurrent', (req, res) => {
 })
 app.post('/addCurrent', (req, res) => {
   var row = req.body
-  var params = [row.name, row.level_num, row.name, row.description]
-  var sql = 'INSERT INTO level_num(Id,name,level_num, date, description) VALUES(0,?,?,?,?)';
+  var params = [row.name, row.level_num, row.name, row.description, req.user.id]
+  var sql = 'INSERT INTO level_num(Id,name,level_num, date, description,user_id) VALUES(0,?,?,?,?,?)';
   const connect = global.connection()
   console.log('--', params) 
   connect.query(sql, params, (err, reStorey) => {
@@ -51,11 +51,11 @@ app.post('/addCurrent', (req, res) => {
   })
 })
 app.get('/getFund', (req, res) => {
-  var sqlTotal = 'select * from fund limit ?,?'
+  var sqlTotal = 'select * from fund where user_id = ? limit ?,?'
   var row = req.query
   var connect = global.connection()
   // console.log('---', row)
-  connect.query(sqlTotal, [(parseInt(row.current || 1) - 1) * parseInt(row.size || 20), parseInt(row.size) || 20], (err, result) => {
+  connect.query(sqlTotal, [req.user.id, (parseInt(row.current || 1) - 1) * parseInt(row.size || 20), parseInt(row.size) || 20], (err, result) => {
     console.log('---', err)
     if (err) return
     if (!err) {
@@ -72,9 +72,9 @@ app.get('/getFund', (req, res) => {
   })
 })
 app.get('/getLevel', (req, res) => {
-  var sql = 'select * from level_num limit ?,?'
+  var sql = 'select * from level_num where user_id = ? limit ?,?'
   var connect = global.connection()
-  var param = [0, 20]
+  var param = [req.user.id, 0, 20]
   connect.query(sql, param, (err, result) => {
     const setData = {
       name: result.map(item => item.name),
@@ -87,8 +87,8 @@ app.get('/getLevel', (req, res) => {
 })
 app.post('/addFund', (req, res) => {
   var row = req.body
-  var params = [row.name, row.number, row.type, row.origin, row.riskLevel]
-  var sql = 'INSERT INTO fund(Id,name,number,type,origin,riskLevel) VALUES(0,?,?,?,?,?)';
+  var params = [row.name, row.number, row.type, row.origin, row.riskLevel, req.user.id]
+  var sql = 'INSERT INTO fund(Id,name,number,type,origin,riskLevel,user_id) VALUES(0,?,?,?,?,?,?)';
   const connect = global.connection()
   console.log('--', params)
   connect.query(sql, params, (err, reStorey) => {
@@ -106,8 +106,8 @@ app.post('/addFund', (req, res) => {
 })
 app.post('/editFund', (req, res) => {
   var row = req.body
-  var params = [row.name, row.number, row.type, row.origin, row.riskLevel, row.id]
-  var sql = 'UPDATE fund SET name = ?, number = ?, type = ?, origin = ?, riskLevel = ?  WHERE Id = ?'
+  var params = [row.name, row.number, row.type, row.origin, row.riskLevel, row.id, req.user.id]
+  var sql = 'UPDATE fund SET name = ?, number = ?, type = ?, origin = ?, riskLevel = ?  WHERE Id = ? and user_id = ?'
   const connect = global.connection()
   connect.query(sql, params, (err, result)=> {
     console.log('--', err)
@@ -123,9 +123,9 @@ app.post('/editFund', (req, res) => {
 })
 app.post('/deleteFund', (req, res) => {
   var row = req.body
-  var sql = 'DELETE FROM  `fund` where id=' + row.id
+  var sql = 'DELETE FROM  `fund` where id = ? and user_id = ?'
   const connect = global.connection()
-  connect.query(sql, (err, result) => {
+  connect.query(sql, [row.id, req.user.id], (err, result) => {
     if (err) return
     res.json({
       code: 200,

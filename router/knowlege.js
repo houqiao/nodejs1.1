@@ -1,11 +1,11 @@
-var express = require('express')
+﻿var express = require('express')
 var global = require('../global')
 
 var app = express.Router()
 
 app.get('/getWebfrond', (req, res) => {
   var params = [(parseInt(req.query.current || 1) -1) * parseInt(req.query.size || 20), parseInt(req.query.size || 20)]
-  var sql = "select * from webfrond limit ?,?";
+  var sql = "select * from webfrond where user_id = ? limit ?,?";
   const connect = global.connection()
   connect.query(sql, params, (err, resll) => {
     if (err) {
@@ -26,7 +26,7 @@ app.get('/getWebfrond', (req, res) => {
   })
 })
 app.post('/addWebfrond', (req, res) => {
-  var sql = 'INSERT INTO webfrond(Id, name, descd, detail) VALUES(0,?,?,?)'
+  var sql = 'INSERT INTO webfrond(Id, name, descd, detail, user_id) VALUES(0,?,?,?,?)'
   const connect = global.connection()
   const params = [req.query.title, req.query.desc, req.query.detail]
   connect.query(sql, params, (err, resll) => {

@@ -1,4 +1,4 @@
-
+﻿
 var express = require('express')
 var os = require('os')
 var global = require('../global.js');
@@ -47,7 +47,7 @@ const networksObj = os.networkInterfaces();
 const networkRes = networksObj["以太网"] && networksObj["以太网"][0]
 console.log('---', JSON.stringify(networksObj))
   var params = [new Date(),  req.headers['x-forwarded-for'] || req.socket.remoteAddress, os.platform(), os.release(), os.hostname(),]
-  var sql = 'INSERT INTO user_login_log(Id,date,ip,area,browser,equipment) VALUES(0,?,?,?,?,?)';
+  var sql = 'INSERT INTO user_login_log(Id,date,ip,area,browser,equipment,user_id) VALUES(0,?,?,?,?,?,?)';
   const connect = global.connection()
   console.log('--', params)
   connect.query(sql, params, (err, reStorey) => {
@@ -66,9 +66,9 @@ console.log('---', JSON.stringify(networksObj))
 })
 
 app.get('/getLoginLog', (req, res) => {
-  var params = [(parseInt(req.query.current || 1) - 1) * parseInt(req.query.size || 20), parseInt(req.query.size || 20)]
-  var sql = "select * from user_login_log limit ?,?";
-  var aqlTotal = 'select count(*) as total from user_login_log'
+  var params = [req.user.id, (parseInt(req.query.current || 1) - 1) * parseInt(req.query.size || 20), parseInt(req.query.size || 20)]
+  var sql = "select * from user_login_log where user_id = ? limit ?,?";
+  var aqlTotal = 'select count(*) as total from user_login_log where user_id = ?'
   const connect = global.connection()
   let data = []
   connect.query(sql, params, (err, resAll) => {

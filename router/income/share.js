@@ -1,12 +1,12 @@
-var express = require('express')
+﻿var express = require('express')
 var app = express.Router()
 var global = require('../../global.js')
 
 app.get('/stock/list', (req, res) => {
   const connect = global.connection()
-  let sql = 'select * from stock '
+  let sql = 'select * from stock where user_id = ? '
   const { current, size, Name, type, owned } = req.query
-  const param = []
+  const param = [req.user.id]
   if (Name) {
     sql = sql + `${sql.includes('where') ? 'and' : 'where'} name like '%${Name}%'` 
   }
@@ -24,7 +24,7 @@ app.get('/stock/list', (req, res) => {
       console.log(err)
       return
     }
-    connect.query('select count(*) as  total from stock', (err, datac) => {
+    connect.query('select count(*) as  total from stock where user_id = ?', [req.user.id], (err, datac) => {
       if (err) {
         console.log(err)
         return
@@ -44,8 +44,8 @@ app.get('/stock/list', (req, res) => {
 
 app.post('/stock/detail', (req, res) => {
   const connect = global.connection()
-  const sql = 'select * from stock where id=' + req.body.id
-  connect.query(sql, (err, data) => {
+  const sql = 'select * from stock where id = ? and user_id = ?'
+  connect.query(sql, [id, req.user.id], (err, data) => {
     if (err) {
       console.log(err)
       return
@@ -60,10 +60,10 @@ app.post('/stock/detail', (req, res) => {
 
 app.post('/stock/add', (req, res) => {
   const connect = global.connection()
-  const sql = 'insert into stock (name, position, cost, target_position, target_cost, type,owned,other,supporting) values(?,?,?,?,?,?,?,?,?)'
+  const sql = 'insert into stock (name, position, cost, target_position, target_cost, type,owned,other,supporting,user_id) values(?,?,?,?,?,?,?,?,?,?)'
   const { name, position, cost, target_position, target_cost, type,owned,other,supporting } = req.body
   console.log(req.body, '123')
-  connect.query(sql, [ name, position, cost, target_position, target_cost, type,owned,other,supporting ], (err, data) => {
+  connect.query(sql, [ name, position, cost, target_position, target_cost, type,owned,other,supporting, req.user.id ], (err, data) => {
     if (err) {
       console.log(err)
       return
@@ -79,8 +79,8 @@ app.post('/stock/add', (req, res) => {
 app.post('/stock/edit', (req, res) => {
   const connect = global.connection()
   const { name, id, position, cost,  target_position, target_cost, type, owned } = req.body
-  const sql = 'update stock set name = ?, position = ?, cost = ?, target_position = ?, target_cost = ?, type = ?, owned = ? where id = ' + id
-  connect.query(sql, [name, position, cost, target_position, target_cost, type,owned], (err, data) => {
+  const sql = 'update stock set name = ?, position = ?, cost = ?, target_position = ?, target_cost = ?, type = ?, owned = ? where id = ? and user_id = ?'
+  connect.query(sql, [name, position, cost, target_position, target_cost, type, owned, id, req.user.id], (err, data) => {
     if (err) {
       console.log(err)
       return
@@ -96,8 +96,8 @@ app.post('/stock/edit', (req, res) => {
 app.post('/stock/delete', (req, res) => {
   const connect = global.connection()
   const { id } = req.query
-  const sql = global.sqlDelete(id)
-  connect.query(sql, (err, data) => {
+  const sql = 'delete from stock where id = ? and user_id = ?'
+  connect.query(sql, [id, req.user.id], (err, data) => {
     if (err) {
       console.log(err)
       return
