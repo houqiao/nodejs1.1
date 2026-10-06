@@ -4,6 +4,7 @@ var express = require('express')
 var bodyParser = require('body-parser') // & 引入body拿参的中间件模块
 var app = express()
 var global = require('./global')
+var authenticate = require('./middleware/auth').authenticate
 var fs = require('fs'); // 提供更改名字模块
 var path = require('path'); // 添加path模块
 app.use(bodyParser.json()) // for parsing application/json
@@ -51,6 +52,8 @@ app.all('*', function(req, res, next) {
     next()
   }
 })
+
+app.use('/api', authenticate)
 
 // & 默认首页路由 
 // * app.get('/', function(req, res, next) {
