@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 var express = require('express')
 var bodyParser = require('body-parser') // & 引入body拿参的中间件模块
 var app = express()
