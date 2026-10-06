@@ -40,10 +40,11 @@ app.all('*', function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', "Control-Type, X-CSRF_Token,  X-Requsted-Width, Accept, Accept-Version, Content-Length, Content-MDS, Date, X-Api-Version, X-File-Name");
   // & 设置前端的这些ajax请求方法'GET, POST, PUT, HEAD, DELETE, OPTION', 都有权限掉接口
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF_Token, X-Requested-With, Accept, Accept-Version, Content-Length, Date, X-Api-Version, X-File-Name')
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, HEAD,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Credentials', true)
-  if ('OPTIONS' == req.methods) {
-    res.send(200)
+  if ('OPTIONS' == req.method) {
+    res.sendStatus(204)
   } else {
     next()
   }

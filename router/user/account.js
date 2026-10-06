@@ -1,67 +1,85 @@
 var express = require('express')
-const { createClient } = require('@supabase/supabase-js')
 var app = express.Router()
-var global = require('../../global')
+var supabase = require('../../supabase')
 
-// 登录接口
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body
+function getCredentials (body) {
+  var account = body.email || body.phone || body.mobile || body.username
+  var credentials = { password: body.password }
+  if (account && account.indexOf('@') !== -1) credentials.email = account
+  else if (account) credentials.phone = account
+  return credentials
+}
 
-  const sql = `SELECT * FROM users WHERE username = ?`
-  const connection = global.connection()
+function publicUser (user) {
+  if (!user) return null
+  return { id: user.id, email: user.email, phone: user.phone, createdAt: user.created_at, lastSignInAt: user.last_sign_in_at }
+}
 
-  connection.query(sql, [username], async (err, results) => {
-    if (err || results.length === 0) {
-      return res.json({ code: 401, message: '用户不存在' })
-    }
+function authError (res, error, fallbackMessage) {
+  var status = error && error.status >= 400 ? error.status : 400
+  return res.status(status).json({ code: status, success: false, message: error && error.message ? error.message : fallbackMessage })
+}
 
-    const user = results[0]
+function getBearerToken (req) {
+  var match = (req.headers.authorization || '').match(/^Bearer\s+(.+)$/i)
+  return match ? match[1] : null
+}
 
-    // 密码比对
-    const isValid = await bcrypt.compare(password, user.password)
-    if (!isValid) {
-      return res.json({ code: 401, message: '密码错误' })
-    }
-
-    // 登录成功
-    res.json({
-      code: 200,
-      message: '登录成功',
-      userId: user.id
-    })
-  })
-})
-// 注册接口（修复 + 完整 + 安全版）
-app.post('/register', async (req, res) => {
-  console.log("我靠")
-  try {
-    // 1. 获取前端传的参数
-    const { mobile, password, email = '' } = req.body
-
-    // 2. 密码加密（绝对不能存明文！）
-    // const hashedPassword = await bcrypt.hash(password, 10)
-
-    // 3. SQL 修复：
-    // id 自增不用传，传了会报错
-    const sql = `INSERT INTO users (username, password, email) VALUES (?, ?, ?)`
-
-    // 4. 执行 SQL
-    const connection = global.connection()
-    connection.query(sql, [mobile, password, email], (err, result) => {
-      if (err) {
-        return res.json({ code: 500, message: '注册失败', error: err.message })
-      }
-
-      // 成功
-      res.json({
-        code: 200,
-        message: '注册成功'
-      })
-    })
-  } catch (err) {
-    res.json({ code: 500, message: '服务器错误' })
+app.post('/register', async function (req, res) {
+  var credentials = getCredentials(req.body || {})
+  if ((!credentials.email && !credentials.phone) || !credentials.password) {
+    return res.status(400).json({ code: 400, success: false, message: 'Email/phone and password are required' })
   }
+  try {
+    var result = await supabase.auth.signUp(credentials)
+    if (result.error) return authError(res, result.error, 'Registration failed')
+    return res.status(201).json({
+      code: 201, success: true,
+      message: result.data.session ? 'Registration succeeded' : 'Registration succeeded; verification is required',
+      data: { user: publicUser(result.data.user), session: result.data.session }
+    })
+  } catch (error) { return authError(res, error, 'Registration failed') }
 })
 
+app.post('/login', async function (req, res) {
+  var credentials = getCredentials(req.body || {})
+  if ((!credentials.email && !credentials.phone) || !credentials.password) {
+    return res.status(400).json({ code: 400, success: false, message: 'Email/phone and password are required' })
+  }
+  try {
+    var result = await supabase.auth.signInWithPassword(credentials)
+    if (result.error) return authError(res, result.error, 'Login failed')
+    return res.json({
+      code: 200, success: true, message: 'Login succeeded',
+      data: {
+        user: publicUser(result.data.user),
+        accessToken: result.data.session.access_token,
+        refreshToken: result.data.session.refresh_token,
+        expiresAt: result.data.session.expires_at,
+        tokenType: result.data.session.token_type
+      }
+    })
+  } catch (error) { return authError(res, error, 'Login failed') }
+})
+
+app.get('/user/current', async function (req, res) {
+  var token = getBearerToken(req)
+  if (!token) return res.status(401).json({ code: 401, success: false, message: 'Missing access token' })
+  try {
+    var result = await supabase.auth.getUser(token)
+    if (result.error) return authError(res, result.error, 'Invalid or expired access token')
+    return res.json({ code: 200, success: true, data: publicUser(result.data.user) })
+  } catch (error) { return authError(res, error, 'Failed to get current user') }
+})
+
+app.post('/logout', async function (req, res) {
+  var token = getBearerToken(req)
+  if (!token) return res.status(401).json({ code: 401, success: false, message: 'Missing access token' })
+  try {
+    var result = await supabase.auth.admin.signOut(token, 'local')
+    if (result.error) return authError(res, result.error, 'Logout failed')
+    return res.json({ code: 200, success: true, message: 'Logout succeeded' })
+  } catch (error) { return authError(res, error, 'Logout failed') }
+})
 
 module.exports = app
